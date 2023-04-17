@@ -21,7 +21,7 @@ pipeline {
             }
         }
 
-        stage('Deploy Kubernetes') {
+        stage('Deploy Kubernetes Digital Ocean') {
             environment {
                 tag_version = "${env.BUILD_ID}"
             }
@@ -32,5 +32,18 @@ pipeline {
                 }
             }
         }
+
+
+        steps {
+                        environment {
+                tag_version = "${env.BUILD_ID}"
+            }
+        withKubeConfig([credentialsId: 'kubeconfig']) {
+                        withAWS(credentials:'awskey') {
+                            sh 'aws eks update-kubeconfig --name jornada-eks --region us-east-1'
+                            sh 'sed -i "s/{{tag}}/$tag_version/g" ./k8s/deployment.yaml'
+                            sh 'kubectl apply -f ./k8s/deployment.yaml'                    
+                        }
+                    }
     }
 }
